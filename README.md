@@ -8,3 +8,6 @@
 - La librería `rich` instalada
 
 Para instalar la librería `rich`, ejecuta:
+```
+sudo apt install python3-rich -y
+```
