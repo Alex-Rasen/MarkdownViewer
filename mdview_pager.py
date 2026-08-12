@@ -91,7 +91,7 @@ def main():
             sys.stdout.write("\033[K\n")
 
         # Barra de estado
-        status = f" Línea {start_line+1}-{min(end_line, total_lines)} de {total_lines} | [AvPág/RePág/Inicio/Fin] [d]espegar [q]uit "
+        status = f" Línea {start_line+1}-{end_line} de {total_lines} | [AvPág/RePág/Inicio/Fin] [d]espegar [q]uit "
         # Limpiar línea de estado y escribir
         sys.stdout.write(f"\033[{term_rows};1H\033[7m{status[:term_cols]}\033[0m\033[K")
         sys.stdout.flush()
@@ -122,8 +122,6 @@ def main():
             start_line = max(0, start_line - 1)
         elif key == '\x1b[B':  # Flecha abajo // Asegúrate de que la vista se desplace una linea hacia abajo
             start_line = min(max(0, total_lines - display_rows), start_line + 1)
-        # Si se redimensiona la terminal (SIGWINCH), volver a renderizar y ajustar
-        # Podríamos añadir detección de cambio de tamaño, pero por simplicidad lo dejamos así.
 
 if __name__ == "__main__":
     main()
