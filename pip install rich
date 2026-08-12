@@ -1,0 +1,21 @@
+
+## Modo de Uso
+1. **Ejecutar el Script**:
+   ```sh
+   ./mdview_pager.py archivo.md
+   ```
+   Reemplaza `archivo.md` con la ruta al archivo Markdown que deseas visualizar.
+
+2. **Navegación**:
+   - **Flecha Arriba/Abajo**: Moverse una línea por línea.
+   - **Página Siguiente (Page Down)**: Usar la tecla de flecha abajo o presionar `PgDn`.
+   - **Página Anterior (Page Up)**: Usar la tecla de flecha arriba o presionar `PgUp`.
+   - **Inicio**: Presionar `Home` o `Ctrl + A, A`.
+   - **Fin**: Presionar `End` o `Ctrl + A, E`.
+
+3. **Comandos Especiales**:
+   - **Despegar (Detach)**: Presionar `d` para enviar la sesión de `screen` a segundo plano.
+   - **Salir**: Presionar `q` para cerrar el visor.
+
+## Ejemplo
+Supongamos que tienes un archivo llamado `ejemplo.md` con contenido Markdown. Puedes visualizarlo ejecutando:
