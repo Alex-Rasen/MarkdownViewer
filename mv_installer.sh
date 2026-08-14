@@ -19,20 +19,38 @@ if [ "$1" = "-u" ] || [ "$1" = "--uninstall" ]; then
 fi
 
 # Rutas de instalación
-COMMAND_PATH="/usr/local/bin/markdown"
+COMMAND_PATH="/usr/local/bin/mdv"
 PAGER_PATH="/usr/local/lib/mdview_pager.py"
 SCREEN_SESSION="mdview"
+
+# Detectar familia de distribución
+detect_distro() {
+    if [ -f /etc/debian_version ]; then
+        PKG_MANAGER="apt"
+        INSTALL_CMD="apt-get install -y -qq"
+        UPDATE_CMD="apt-get update -qq"
+    elif [ -f /etc/redhat-release ]; then
+        PKG_MANAGER="yum"
+        INSTALL_CMD="yum install -y -q"
+        UPDATE_CMD="yum check-update -q"  # no actualiza, solo comprueba
+    else
+        echo "Distribución no soportada. Solo Debian/Ubuntu y RedHat/CentOS."
+        exit 1
+    fi
+}
 
 # -------------------------------------------------------------------
 # Funciones de utilidad
 # -------------------------------------------------------------------
 check_dependencies() {
     echo "==> Verificando dependencias del sistema..."
+    detect_distro
+
     # screen
     if ! command -v screen &>/dev/null; then
         echo "    Instalando screen..."
-        apt-get update -qq
-        apt-get install -y -qq screen
+        $UPDATE_CMD
+        $INSTALL_CMD screen
     else
         echo "    screen ya está instalado."
     fi
@@ -40,63 +58,68 @@ check_dependencies() {
     # python3
     if ! command -v python3 &>/dev/null; then
         echo "    Instalando python3..."
-        apt-get install -y -qq python3
+        $INSTALL_CMD python3
     else
         echo "    python3 ya está instalado."
     fi
 
-    # python3-rich (paquete del sistema o pip)
-    if ! python3 -c "import rich" &>/dev/null; then
-        echo "    La librería 'rich' de Python no está presente. Intentando instalarla..."
-        # Intentar vía apt primero
-        if apt-cache show python3-rich &>/dev/null; then
-            apt-get install -y -qq python3-rich
-        else
-            # Fallback a pip
-            if ! command -v pip3 &>/dev/null; then
-                apt-get install -y -qq python3-pip
-            fi
-            pip3 install -q rich
+    # pip3
+    if ! command -v pip3 &>/dev/null; then
+        echo "    Instalando pip3..."
+        if [ "$PKG_MANAGER" = "apt" ]; then
+            $INSTALL_CMD python3-pip
+        elif [ "$PKG_MANAGER" = "yum" ]; then
+            $INSTALL_CMD python3-pip
         fi
     else
-        echo "    python3-rich ya está instalado."
+        echo "    pip3 ya está instalado."
+    fi
+
+    # rich
+    if ! python3 -c "import rich" &>/dev/null; then
+        echo "    Instalando librería 'rich' con pip..."
+        pip3 install -q rich
+    else
+        echo "    rich ya está instalado."
     fi
 }
 
 install_files() {
-    echo "==> Instalando archivos del visor Markdown..."
+    echo "==> Instalando archivos del visor Markdown (comando 'mdv')..."
 
-    # Crear directorio para el paginador si no existe
     mkdir -p "$(dirname "$PAGER_PATH")"
 
-    # Escribir el script del comando 'markdown'
+    # Escribir el script del comando 'mdv'
     cat > "$COMMAND_PATH" << 'COMMAND_EOF'
 #!/bin/bash
-# Comando markdown - visualizador de Markdown con paginación y screen
+# Comando mdv - visualizador de Markdown con paginación y screen
 PAGER_SCRIPT="/usr/local/lib/mdview_pager.py"
 SCREEN_SESSION="mdview"
 
 mostrar_ayuda() {
     cat << EOF
-Uso: markdown [OPCIONES] <archivo.md>
-       markdown -h | --help
+Uso: mdv [OPCIONES] [archivo.md]
+       mdv -h | --help
+       mdv -r | --reconnect
 
 Visualiza un archivo Markdown en la terminal con formato enriquecido y paginación.
 Utiliza una sesión de screen llamada 'mdview'. Si la sesión existe,
-se reengancha a ella. Si no, se crea una nueva sesión.
+se reengancha a ella (ignorando el archivo proporcionado).
 
 Opciones:
-  -h, --help   Muestra esta ayuda.
+  -h, --help     Muestra esta ayuda.
+  -r, --reconnect  Reengancha a la sesión de screen existente (sin archivo).
 
 Controles dentro del visor:
   Av Pág, Re Pág : Página siguiente / anterior
   Inicio, Fin    : Ir al principio / final del documento
-  d              : Despegar (suspender) la sesión; luego recuperar con 'markdown <archivo>'
+  d              : Despegar (suspender) la sesión; luego recuperar con 'mdv -r'
   q              : Salir del visor y cerrar la sesión
 
 Ejemplos:
-  markdown README.md
-  markdown -h
+  mdv README.md
+  mdv -r
+  mdv -h
 EOF
 }
 
@@ -106,10 +129,19 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     exit 0
 fi
 
-# Validar argumentos
+if [ "$1" = "-r" ] || [ "$1" = "--reconnect" ]; then
+    if screen -list | grep -q "\.${SCREEN_SESSION}\b"; then
+        exec screen -r "$SCREEN_SESSION"
+    else
+        echo "No hay sesión de screen '${SCREEN_SESSION}' para reenganchar." >&2
+        exit 1
+    fi
+fi
+
+# Si se proporciona un archivo
 if [ $# -ne 1 ]; then
-    echo "Error: Se requiere exactamente un archivo." >&2
-    echo "Uso: markdown <archivo.md>" >&2
+    echo "Error: Se requiere exactamente un archivo o usar -r para reenganchar." >&2
+    echo "Uso: mdv <archivo.md> o mdv -r" >&2
     exit 1
 fi
 
@@ -133,10 +165,9 @@ else
 fi
 COMMAND_EOF
 
-    # Hacer ejecutable el comando
     chmod +x "$COMMAND_PATH"
 
-    # Escribir el paginador Python
+    # Escribir el paginador Python (sin cambios)
     cat > "$PAGER_PATH" << 'PAGER_EOF'
 #!/usr/bin/env python3
 """
@@ -288,7 +319,7 @@ PAGER_EOF
 }
 
 uninstall_files() {
-    echo "==> Desinstalando visor Markdown..."
+    echo "==> Desinstalando visor Markdown (mdv)..."
     if [ -f "$COMMAND_PATH" ]; then
         rm -f "$COMMAND_PATH"
         echo "    Eliminado: $COMMAND_PATH"
@@ -303,7 +334,6 @@ uninstall_files() {
         echo "    No se encontró $PAGER_PATH"
     fi
 
-    # Cerrar sesión de screen si existe
     if screen -list 2>/dev/null | grep -q "\.${SCREEN_SESSION}\b"; then
         read -p "¿Deseas cerrar la sesión de screen '${SCREEN_SESSION}'? (s/N): " respuesta
         if [[ "$respuesta" =~ ^[sS]$ ]]; then
@@ -313,21 +343,21 @@ uninstall_files() {
             echo "    La sesión de screen sigue activa. Puedes cerrarla con: screen -X -S ${SCREEN_SESSION} quit"
         fi
     fi
-    echo "    Los paquetes del sistema (screen, python3, python3-rich) no se han desinstalado."
+    echo "    Los paquetes del sistema (screen, python3, pip) no se han desinstalado."
 }
 
 # -------------------------------------------------------------------
 # Ejecución principal
 # -------------------------------------------------------------------
 if [ "$ACTION" = "install" ]; then
-    echo "Instalando visor Markdown..."
+    echo "Instalando visor Markdown (mdv)..."
     check_dependencies
     install_files
     echo ""
     echo "¡Instalación completada!"
-    echo "Uso: markdown archivo.md"
+    echo "Uso: mdv archivo.md  o  mdv -r"
 elif [ "$ACTION" = "uninstall" ]; then
-    echo "Desinstalando visor Markdown..."
+    echo "Desinstalando visor Markdown (mdv)..."
     uninstall_files
     echo ""
     echo "Desinstalación completada."
