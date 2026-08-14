@@ -1,4 +1,4 @@
-# 📜 Markdown Terminal Viewer (mtv)
+# 📜 Markdown Terminal Viewer (mdv)
 
 Visor de archivos Markdown en la terminal de Linux con formato enriquecido, paginación y soporte para sesiones de `screen`. Renderiza el contenido como si estuvieras en un navegador, respetando estilos (negritas, cursivas, títulos, código, tablas, listas…).
 
@@ -11,7 +11,7 @@ Visor de archivos Markdown en la terminal de Linux con formato enriquecido, pagi
   - Flechas ↑/↓ para desplazamiento línea a línea.
 - **Sesión con `screen`**: 
   - Al abrir un archivo se crea una sesión de `screen` llamada `mdview` (o se reengancha si ya existe).
-  - Puedes **despegar** la sesión con la tecla `d` y recuperarla más tarde con el mismo comando.
+  - Puedes **despegar** la sesión con la tecla `d` y recuperarla más tarde con el comando `mdv -r`.
   - Con `q` cierras la sesión y sales del visor.
 - **Ajuste automático de texto**: nunca se cortan palabras; el texto se adapta al ancho de la terminal, respetando la estructura de tablas y párrafos.
 - **Instalación sencilla** mediante un único script que gestiona dependencias.
@@ -33,22 +33,22 @@ Sistemas basados en Debian/Ubuntu son soportados directamente. Para otras distri
    ```bash
    chmod +x mv_installer.sh
    ```
-3. Ejecútalo como usuario normal (se pedirá sudo automáticamente):
+3. Ejecútalo como root o como usuario normal (se pedirá sudo automáticamente):
    ```bash
    ./mv_installer.sh
    ```
    El script:
    - Eleva privilegios si no eres root.
    - Verifica e instala `screen`, `python3` y `rich` si faltan.
-   - Copia el comando `markdown` a `/usr/local/bin/markdown`.
+   - Copia el comando `mdv` a `/usr/local/bin/mdv`.
    - Copia el paginador `mdview_pager.py` a `/usr/local/lib/mdview_pager.py`.
 
-Tras la instalación tendrás disponible el comando `markdown`.
+Tras la instalación tendrás disponible el comando `mdv`.
 
 ## 🖥️ Uso
 
 ```bash
-markdown archivo.md
+mdv archivo.md
 ```
 
 - Si es la primera vez, se crea una nueva sesión de `screen`.
@@ -69,12 +69,12 @@ markdown archivo.md
 ### Despegar y reconectar
 
 - Pulsa **`d`** para “despegar” la sesión. El visor sigue ejecutándose en segundo plano y puedes usar la terminal normalmente.
-- Para retomar la visualización, simplemente vuelve a ejecutar `markdown archivo.md` (el nombre del archivo es irrelevante mientras la sesión exista). Se reenganchará exactamente donde lo dejaste.
+- Para retomar la visualización, ejecuta `mdv -r`. Se reenganchará exactamente donde lo dejaste.
 
 ### Ayuda
 
 ```bash
-markdown -h
+mdv -h
 ```
 
 ## 🗑️ Desinstalación
@@ -86,7 +86,7 @@ Ejecuta el mismo script con el argumento `-u`:
 ```
 
 Esto:
-- Elimina `/usr/local/bin/markdown` y `/usr/local/lib/mdview_pager.py`.
+- Elimina `/usr/local/bin/mdv` y `/usr/local/lib/mdview_pager.py`.
 - Pregunta si quieres cerrar la sesión activa de `screen` (si existe).
 - **No desinstala** `screen`, `python3` ni `rich`, ya que pueden ser usados por otros programas.
 
